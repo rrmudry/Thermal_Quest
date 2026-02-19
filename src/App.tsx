@@ -27,47 +27,89 @@ const QUESTIONS_PER_ROUND = 10;
 
 function FireBackground({ score }: { score: number }) {
   const intensity = Math.min(score / 1500, 1);
+  const flameCount = 8;
+  const emberCount = 12;
 
   return (
     <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none overflow-hidden z-0">
-      {/* Base Warmth */}
+      {/* Base Warmth / Floor Glow */}
       <motion.div
         animate={{
-          opacity: [0.1 + intensity * 0.2, 0.15 + intensity * 0.2, 0.1 + intensity * 0.2],
+          opacity: [0.2 + intensity * 0.3, 0.3 + intensity * 0.4, 0.2 + intensity * 0.3],
         }}
-        transition={{ duration: 4, repeat: Infinity }}
-        className="absolute bottom-0 w-full h-[60%] bg-gradient-to-t from-orange-600/20 to-transparent blur-[120px]"
+        transition={{ duration: 3, repeat: Infinity }}
+        className="absolute bottom-[-10%] w-full h-[50%] bg-gradient-to-t from-orange-600 via-red-900/40 to-transparent blur-[120px]"
       />
 
       {/* Dynamic Flames */}
-      <div className="absolute bottom-[-20%] inset-x-0 flex justify-around items-end h-[80%] blur-3xl opacity-50">
-        {[...Array(5)].map((_, i) => (
+      <div className="absolute bottom-[-15%] inset-x-0 flex justify-around items-end h-[90%] blur-2xl opacity-60">
+        {[...Array(flameCount)].map((_, i) => (
           <motion.div
-            key={i}
+            key={`flame-${i}`}
             animate={{
-              height: [`${15 + intensity * 40}%`, `${25 + intensity * 60}%`, `${15 + intensity * 40}%`],
-              opacity: [0.2 + intensity * 0.4, 0.4 + intensity * 0.5, 0.2 + intensity * 0.4],
-              scaleX: [1, 1.2, 1],
+              height: [
+                `${20 + intensity * 50}%`,
+                `${35 + intensity * 75}%`,
+                `${25 + intensity * 60}%`
+              ],
+              opacity: [0.4 + intensity * 0.3, 0.7 + intensity * 0.3, 0.4 + intensity * 0.3],
+              scaleX: [1, 1.4, 1.1],
+              x: [0, (i % 2 === 0 ? 15 : -15), 0],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: 2 + Math.random() * 1.5,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: i * 0.3
+              delay: i * 0.2
             }}
-            className="w-[20%] rounded-full bg-gradient-to-t from-orange-500 via-red-500 to-transparent shrink-0"
-          />
+            className="w-[15%] rounded-full relative shrink-0"
+            style={{
+              background: 'linear-gradient(to top, #ea580c, #f97316, transparent)'
+            }}
+          >
+            {/* White-hot Core */}
+            <motion.div
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.1 }}
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[60%] bg-yellow-200 blur-xl rounded-full"
+            />
+          </motion.div>
         ))}
       </div>
 
-      {/* High Intensity Glow */}
+      {/* Floating Embers / Sparks */}
+      {[...Array(emberCount)].map((_, i) => (
+        <motion.div
+          key={`ember-${i}`}
+          initial={{
+            x: `${Math.random() * 100}%`,
+            y: '100%',
+            scale: Math.random() * 0.5 + 0.5,
+            opacity: 0
+          }}
+          animate={{
+            y: '-20%',
+            x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
+            opacity: [0, 1, 1, 0],
+          }}
+          transition={{
+            duration: 4 + Math.random() * 4,
+            repeat: Infinity,
+            ease: "linear",
+            delay: Math.random() * 5
+          }}
+          className="absolute w-1 h-1 bg-yellow-500 rounded-full blur-[1px] shadow-[0_0_10px_#f59e0b]"
+        />
+      ))}
+
+      {/* Extreme Pulse for High Scores */}
       <motion.div
         animate={{
-          opacity: intensity * 0.4,
-          scale: [1, 1.1, 1]
+          opacity: intensity * 0.5,
+          scale: [1, 1.05, 1],
         }}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[60%] h-[40%] bg-orange-400/20 blur-[100px] rounded-full"
+        transition={{ duration: 1.5, repeat: Infinity }}
+        className="absolute bottom-[-20%] left-1/2 -translate-x-1/2 w-full h-[60%] bg-orange-500/10 blur-[150px] rounded-full"
       />
     </div>
   );
