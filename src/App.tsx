@@ -5,16 +5,16 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Flame, 
-  Wind, 
-  Sun, 
-  Trophy, 
-  Timer, 
-  Zap, 
-  RotateCcw, 
-  Play, 
-  CheckCircle2, 
+import {
+  Flame,
+  Wind,
+  Sun,
+  Trophy,
+  Timer,
+  Zap,
+  RotateCcw,
+  Play,
+  CheckCircle2,
   XCircle,
   ChevronRight,
   Info
@@ -23,9 +23,20 @@ import { SCENARIOS, HeatTransferType, Scenario } from './constants';
 
 const BASE_POINTS = 100;
 const TIME_LIMIT = 10; // seconds per question
+const QUESTIONS_PER_ROUND = 10;
+
+function shuffle<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
 
 export default function App() {
   const [gameState, setGameState] = useState<'start' | 'playing' | 'end'>('start');
+  const [gameScenarios, setGameScenarios] = useState<Scenario[]>([]);
   const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
@@ -36,9 +47,11 @@ export default function App() {
     return saved ? parseInt(saved, 10) : 0;
   });
 
-  const currentScenario = SCENARIOS[currentScenarioIndex];
+  const currentScenario = gameScenarios[currentScenarioIndex];
 
   const startGame = () => {
+    const shuffled = shuffle(SCENARIOS);
+    setGameScenarios(shuffled.slice(0, QUESTIONS_PER_ROUND));
     setGameState('playing');
     setCurrentScenarioIndex(0);
     setScore(0);
@@ -48,7 +61,7 @@ export default function App() {
   };
 
   const handleAnswer = (selectedType: HeatTransferType) => {
-    if (feedback) return;
+    if (feedback || !currentScenario) return;
 
     const isCorrect = selectedType === currentScenario.type;
     let bonus = 0;
@@ -72,7 +85,7 @@ export default function App() {
   };
 
   const nextQuestion = useCallback(() => {
-    if (currentScenarioIndex < SCENARIOS.length - 1) {
+    if (currentScenarioIndex < gameScenarios.length - 1) {
       setCurrentScenarioIndex(prev => prev + 1);
       setTimeLeft(TIME_LIMIT);
       setFeedback(null);
@@ -84,7 +97,7 @@ export default function App() {
         localStorage.setItem('thermal-quest-highscore', score.toString());
       }
     }
-  }, [currentScenarioIndex, score, highScore]);
+  }, [currentScenarioIndex, gameScenarios.length, score, highScore]);
 
   useEffect(() => {
     let timer: number;
@@ -92,7 +105,7 @@ export default function App() {
       timer = window.setInterval(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0 && !feedback) {
+    } else if (timeLeft === 0 && !feedback && gameState === 'playing') {
       setFeedback({
         isCorrect: false,
         message: "Time's up!"
@@ -102,6 +115,8 @@ export default function App() {
 
     return () => clearInterval(timer);
   }, [gameState, feedback, timeLeft]);
+
+  if (gameState === 'playing' && !currentScenario) return null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-emerald-500/30 overflow-hidden relative">
@@ -120,7 +135,7 @@ export default function App() {
             </div>
             <h1 className="text-2xl font-bold tracking-tighter uppercase italic">Thermal Quest</h1>
           </div>
-          
+
           {gameState === 'playing' && (
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
@@ -130,7 +145,7 @@ export default function App() {
               <div className="w-px h-8 bg-zinc-800" />
               <div className="flex flex-col items-end">
                 <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Progress</span>
-                <span className="text-xl font-mono font-bold">{currentScenarioIndex + 1}/{SCENARIOS.length}</span>
+                <span className="text-xl font-mono font-bold">{currentScenarioIndex + 1}/{gameScenarios.length}</span>
               </div>
             </div>
           )}
@@ -138,7 +153,7 @@ export default function App() {
 
         <AnimatePresence mode="wait">
           {gameState === 'start' && (
-            <motion.div 
+            <motion.div
               key="start"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -158,10 +173,10 @@ export default function App() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-yellow-400 to-emerald-400">Heat Transfer</span>
               </h2>
               <p className="text-zinc-400 max-w-md mb-12 text-lg">
-                Identify conduction, convection, and radiation in real-world scenarios. 
+                Identify conduction, convection, and radiation in real-world scenarios.
                 Be fast, be accurate, and claim your high score.
               </p>
-              <button 
+              <button
                 onClick={startGame}
                 className="group relative px-12 py-5 bg-white text-black font-bold uppercase tracking-widest rounded-full hover:bg-emerald-400 transition-all duration-300 flex items-center gap-3 overflow-hidden"
               >
@@ -180,7 +195,7 @@ export default function App() {
           )}
 
           {gameState === 'playing' && (
-            <motion.div 
+            <motion.div
               key="playing"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -189,7 +204,7 @@ export default function App() {
             >
               {/* Timer Bar */}
               <div className="w-full h-1 bg-zinc-800 rounded-full mb-12 overflow-hidden">
-                <motion.div 
+                <motion.div
                   className={`h-full ${timeLeft < 3 ? 'bg-red-500' : 'bg-emerald-500'}`}
                   initial={{ width: '100%' }}
                   animate={{ width: `${(timeLeft / TIME_LIMIT) * 100}%` }}
@@ -220,15 +235,14 @@ export default function App() {
                       animate={{ scale: 1, opacity: 1 }}
                       className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
                     >
-                      <div className={`px-8 py-4 rounded-2xl shadow-2xl flex flex-col items-center gap-2 ${
-                        feedback.isCorrect ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'
-                      }`}>
+                      <div className={`px-8 py-4 rounded-2xl shadow-2xl flex flex-col items-center gap-2 ${feedback.isCorrect ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'
+                        }`}>
                         <div className="flex items-center gap-3">
                           {feedback.isCorrect ? <CheckCircle2 className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}
                           <span className="text-3xl font-black uppercase italic">{feedback.message}</span>
                         </div>
                         {feedback.bonus ? (
-                          <motion.span 
+                          <motion.span
                             initial={{ y: 10, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             className="text-sm font-bold uppercase tracking-widest flex items-center gap-1"
@@ -253,17 +267,15 @@ export default function App() {
                     key={opt.type}
                     disabled={!!feedback}
                     onClick={() => handleAnswer(opt.type)}
-                    className={`group p-6 border-2 rounded-2xl transition-all duration-300 flex flex-col items-center gap-4 ${
-                      feedback 
-                        ? opt.type === currentScenario.type 
-                          ? 'border-emerald-500 bg-emerald-500/10' 
-                          : 'border-zinc-800 opacity-50'
-                        : `border-zinc-800 ${opt.color}`
-                    }`}
+                    className={`group p-6 border-2 rounded-2xl transition-all duration-300 flex flex-col items-center gap-4 ${feedback
+                      ? opt.type === currentScenario.type
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-zinc-800 opacity-50'
+                      : `border-zinc-800 ${opt.color}`
+                      }`}
                   >
-                    <opt.icon className={`w-8 h-8 transition-transform duration-300 group-hover:scale-110 ${
-                      feedback && opt.type === currentScenario.type ? 'text-emerald-400' : 'text-zinc-400 group-hover:text-white'
-                    }`} />
+                    <opt.icon className={`w-8 h-8 transition-transform duration-300 group-hover:scale-110 ${feedback && opt.type === currentScenario.type ? 'text-emerald-400' : 'text-zinc-400 group-hover:text-white'
+                      }`} />
                     <span className="font-bold uppercase tracking-widest text-sm">{opt.type}</span>
                   </button>
                 ))}
@@ -290,7 +302,7 @@ export default function App() {
                       onClick={nextQuestion}
                       className="w-full py-5 bg-white text-black font-bold uppercase tracking-widest rounded-2xl hover:bg-emerald-400 transition-colors flex items-center justify-center gap-2"
                     >
-                      {currentScenarioIndex === SCENARIOS.length - 1 ? 'Finish Quest' : 'Next Scenario'}
+                      {currentScenarioIndex === gameScenarios.length - 1 ? 'Finish Quest' : 'Next Scenario'}
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </motion.div>
@@ -300,7 +312,7 @@ export default function App() {
           )}
 
           {gameState === 'end' && (
-            <motion.div 
+            <motion.div
               key="end"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -311,7 +323,7 @@ export default function App() {
               </div>
               <h2 className="text-5xl font-black mb-2 tracking-tighter uppercase">Quest Complete!</h2>
               <p className="text-zinc-500 uppercase tracking-[0.3em] text-sm mb-12">Final Score</p>
-              
+
               <div className="text-8xl font-mono font-black text-white mb-12 tabular-nums">
                 {score.toLocaleString()}
               </div>
@@ -328,7 +340,7 @@ export default function App() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                <button 
+                <button
                   onClick={startGame}
                   className="flex-1 py-5 bg-white text-black font-bold uppercase tracking-widest rounded-2xl hover:bg-emerald-400 transition-colors flex items-center justify-center gap-3"
                 >
