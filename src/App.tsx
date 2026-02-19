@@ -25,6 +25,54 @@ const BASE_POINTS = 100;
 const TIME_LIMIT = 10; // seconds per question
 const QUESTIONS_PER_ROUND = 10;
 
+function FireBackground({ score }: { score: number }) {
+  const intensity = Math.min(score / 1500, 1);
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none overflow-hidden z-0">
+      {/* Base Warmth */}
+      <motion.div
+        animate={{
+          opacity: [0.1 + intensity * 0.2, 0.15 + intensity * 0.2, 0.1 + intensity * 0.2],
+        }}
+        transition={{ duration: 4, repeat: Infinity }}
+        className="absolute bottom-0 w-full h-[60%] bg-gradient-to-t from-orange-600/20 to-transparent blur-[120px]"
+      />
+
+      {/* Dynamic Flames */}
+      <div className="absolute bottom-[-20%] inset-x-0 flex justify-around items-end h-[80%] blur-3xl opacity-50">
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{
+              height: [`${15 + intensity * 40}%`, `${25 + intensity * 60}%`, `${15 + intensity * 40}%`],
+              opacity: [0.2 + intensity * 0.4, 0.4 + intensity * 0.5, 0.2 + intensity * 0.4],
+              scaleX: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.3
+            }}
+            className="w-[20%] rounded-full bg-gradient-to-t from-orange-500 via-red-500 to-transparent shrink-0"
+          />
+        ))}
+      </div>
+
+      {/* High Intensity Glow */}
+      <motion.div
+        animate={{
+          opacity: intensity * 0.4,
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[60%] h-[40%] bg-orange-400/20 blur-[100px] rounded-full"
+      />
+    </div>
+  );
+}
+
 function shuffle<T>(array: T[]): T[] {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -120,6 +168,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-emerald-500/30 overflow-hidden relative">
+      <FireBackground score={score} />
+
       {/* Background Glows */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-500/10 blur-[120px] rounded-full" />
